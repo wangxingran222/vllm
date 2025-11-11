@@ -111,8 +111,26 @@ class PassConfig:
     """Whether to enable async TP."""
     enable_fi_allreduce_fusion: bool = False
     """Whether to enable flashinfer allreduce fusion."""
-    fi_allreduce_fusion_max_token_num: int = 16384
-    """Max number of tokens to used in flashinfer allreduce fusion."""
+    fi_allreduce_fusion_max_size_mb: float | None = None
+    """The threshold of the communicated tensor sizes under which
+    vllm should use flashinfer fused allreduce. Specified as a
+    float in MB.
+    Unspecified will fallback to default values 
+    which are compute capability and world size dependent.
+        FI_ALLREDUCE_FUSION_MAX_SIZE_MB = {
+            90: {
+                2: 64,  # 64MB
+                4: 2,  # 2MB
+                8: 1,  # 1MB
+            },
+            100: {
+                2: 64,  # 64MB
+                4: 32,  # 32MB
+                8: 1,  # 1MB
+            },
+        }, where key is the device capability"""
+    enable_qk_norm_rope_fusion: bool = False
+    """Whether to enable the fused Q/K RMSNorm + RoPE pass."""
 
     # TODO(luka) better pass enabling system.
 
@@ -136,6 +154,17 @@ class PassConfig:
                     "Fusion enabled but reshape elimination disabled. "
                     "Attention + quant (fp8) fusion might not work"
                 )
+            if self.enable_fi_allreduce_fusion:
+                logger.warning_once(
+                    "Fusion enabled but reshape elimination disabled. "
+                    "Allreduce + rms norm + quant (fp8) fusion might not work"
+                )
+        if self.enable_qk_norm_rope_fusion and not current_platform.is_cuda():
+            logger.warning_once(
+                "QK Norm + RoPE fusion enabled but the current platform is not "
+                "CUDA. The fusion will be disabled."
+            )
+            self.enable_qk_norm_rope_fusion = False
 
 
 @config

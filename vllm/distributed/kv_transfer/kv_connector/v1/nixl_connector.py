@@ -674,7 +674,7 @@ class NixlConnectorWorker:
         remote_tp_size: dict[EngineId, int]
         is_mla: bool
         total_num_kv_heads: int
-         attn_backend: type[AttentionBackend]
+        attn_backend: type[AttentionBackend]
 
         def __post_init__(self):
             # Figure out whether the first dimension of the cache is K/V

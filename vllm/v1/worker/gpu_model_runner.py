@@ -236,7 +236,6 @@ class ExecuteModelState(NamedTuple):
     hidden_states: torch.Tensor
     sample_hidden_states: torch.Tensor
     aux_hidden_states: list[torch.Tensor] | None
-    ec_connector_output: ECConnectorOutput | None
 
 
 class GPUModelRunner(LoRAModelRunnerMixin, KVConnectorModelRunnerMixin):
@@ -2725,7 +2724,6 @@ class GPUModelRunner(LoRAModelRunnerMixin, KVConnectorModelRunnerMixin):
             hidden_states,
             sample_hidden_states,
             aux_hidden_states,
-            ec_connector_output,
         )
         self.kv_connector_output = kv_connector_output
         return None
@@ -2760,7 +2758,6 @@ class GPUModelRunner(LoRAModelRunnerMixin, KVConnectorModelRunnerMixin):
             hidden_states,
             sample_hidden_states,
             aux_hidden_states,
-            ec_connector_output,
         ) = self.execute_model_state
         # Clear ephemeral state.
         self.execute_model_state = None

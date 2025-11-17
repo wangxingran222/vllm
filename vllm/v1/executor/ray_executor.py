@@ -99,11 +99,6 @@ class RayDistributedExecutor(Executor):
         # KV connector setup
         self.has_connector = self.vllm_config.kv_transfer_config is not None
 
-        self.ec_producer = (
-            self.vllm_config.ec_transfer_config is not None
-            and self.vllm_config.ec_transfer_config.is_ec_producer
-        )
-
         self.scheduler_output: SchedulerOutput | None = None
 
     @property
@@ -401,7 +396,7 @@ class RayDistributedExecutor(Executor):
                 "after execute_model() returns None."
             )
 
-        if self.ec_producer or not scheduler_output.total_num_scheduled_tokens:
+        if not scheduler_output.total_num_scheduled_tokens:
             # Model will not execute, call model runner immediately.
             return self._execute_dag(scheduler_output, None, non_block)
 

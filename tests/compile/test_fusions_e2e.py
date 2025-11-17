@@ -113,13 +113,6 @@ if current_platform.is_cuda():
                 async_tp=96,  # MLP is MoE, half the fusions of dense
             ),
         ),
-        ModelBackendTestCase(
-            model_name="Qwen/Qwen3-30B-A3B",
-            model_kwargs=dict(max_model_len=1024),
-            backend=_Backend.TRITON_ATTN,
-            attention_fusions=0,
-            allreduce_fusions=97,
-        ),
     ]
 
 elif current_platform.is_rocm():

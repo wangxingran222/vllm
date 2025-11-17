@@ -22,7 +22,7 @@ import zmq
 
 from vllm import envs
 from vllm.attention import AttentionBackend
-from vllm.attention.backends.registry import _Backend, backend_name_to_enum
+from vllm.attention.backends.registry import _Backend
 from vllm.attention.selector import get_attn_backend
 from vllm.config import VllmConfig
 from vllm.distributed.kv_transfer.kv_connector.v1.base import (

@@ -20,7 +20,9 @@ from vllm.v1.kv_cache_interface import (
     MambaSpec,
     MLAAttentionSpec,
     SinkFullAttentionSpec,
+    SlidingWindowMLASpec,
     SlidingWindowSpec,
+    TQFullAttentionSpec,
 )
 from vllm.v1.request import Request
 
@@ -209,7 +211,7 @@ class SingleTypeKVCacheManager(ABC):
                 cdiv(num_total_computed_tokens, self.block_size) - len(req_blocks)
             )
             req_blocks.extend(allocated_blocks)
-            if type(self.kv_cache_spec) is FullAttentionSpec:
+            if type(self.kv_cache_spec) in (FullAttentionSpec, TQFullAttentionSpec):
                 self.new_block_ids.extend(b.block_id for b in allocated_blocks)
 
     def allocate_new_blocks(
@@ -237,7 +239,7 @@ class SingleTypeKVCacheManager(ABC):
         else:
             new_blocks = self.block_pool.get_new_blocks(num_new_blocks)
             req_blocks.extend(new_blocks)
-            if type(self.kv_cache_spec) is FullAttentionSpec:
+            if type(self.kv_cache_spec) in (FullAttentionSpec, TQFullAttentionSpec):
                 self.new_block_ids.extend(b.block_id for b in new_blocks)
             return new_blocks
 
@@ -533,12 +535,10 @@ class SlidingWindowManager(SingleTypeKVCacheManager):
             ):
                 # Skip prefix matching check if the block is not aligned with
                 # `alignment_tokens`.
-                if (
-                    num_contiguous_blocks == 0
-                    and block_size != alignment_tokens  # Faster for common case.
-                    and (i + 1) * block_size % alignment_tokens != 0
-                ):
-                    continue
+                if num_contiguous_blocks == 0 and block_size != alignment_tokens:
+                    post_pop_blocks = i if use_eagle else i + 1
+                    if (post_pop_blocks * block_size) % alignment_tokens != 0:
+                        continue
                 # Add the cached block to the computed blocks.
                 for computed, cached in zip(computed_blocks, cached_block):
                     computed[i] = cached
@@ -1114,8 +1114,10 @@ class SinkFullAttentionManager(FullAttentionManager):
 
 spec_manager_map: dict[type[KVCacheSpec], type[SingleTypeKVCacheManager]] = {
     FullAttentionSpec: FullAttentionManager,
+    TQFullAttentionSpec: FullAttentionManager,
     MLAAttentionSpec: FullAttentionManager,
     SlidingWindowSpec: SlidingWindowManager,
+    SlidingWindowMLASpec: SlidingWindowManager,
     ChunkedLocalAttentionSpec: ChunkedLocalAttentionManager,
     MambaSpec: MambaManager,
     CrossAttentionSpec: CrossAttentionManager,
